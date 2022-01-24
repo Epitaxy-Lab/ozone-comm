@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.font as tkfont
 import serial.tools.list_ports
-from simple_pid import PID
+from pid import *
 from utilities import *
 import serial
 import os
@@ -16,21 +16,23 @@ LBL_W = 40
 LBL_H = 3
 
 ## Control Parameters
-def_P = .1
-def_I = .1
+def_P = .5
+def_I = .05
 def_D = 0
-convergence_bound = .03
+SAMP_time = 2
+RAMP_time = 75
+convergence_bound = .015
 
 ## Valve Parameters
-DEFAULT_VALVE = 46.0
+DEFAULT_VALVE = 44.0
 MAX_VALVE_OPEN = 55.0
 
 class Valve_Operation():
     def __init__(self, root, ion_com, leak_com):
 
         self.root = root
-        self.ion_conn = serial.Serial() #serial.Serial(ion_com, baudrate=4800, timeout=.5)
-        #self.leak_conn = serial.Serial(leak_com, baudrate=9600, parity=serial.PARITY_EVEN, bytesize=serial.SEVENBITS, timeout=3)
+        self.ion_conn = serial.Serial(ion_com, baudrate=19200, timeout=.2)
+        self.leak_conn = serial.Serial(leak_com, baudrate=9600, parity=serial.PARITY_EVEN, bytesize=serial.SEVENBITS, timeout=3)
 
         self.init_buttons()
         self.init_labels()
@@ -59,18 +61,23 @@ class Valve_Operation():
         txt_font = tkfont.Font(family="Helvetica", size=24)
         self.txt_set_pressure = tk.Label(self.lbl_frame, text="Desired Pressure", font = txt_font)
         inp_font = tkfont.Font(family="Helvetica", size=22)
-        self.lbl_set_pressure = tk.Entry(self.lbl_frame, text="Desired Pressure", width=ENTRY_W, font=inp_font)
+
+        self.numpad = None
+
+        self.lbl_set_pressure = tk.Entry(self.lbl_frame,  text="Desired Pressure", width=ENTRY_W, font=inp_font)
         self.lbl_set_pressure_power = tk.Entry(self.lbl_frame, text="Desired Power", width=ENTRY_W, font=inp_font)
-        self.lbl_set_pressure.bind("<1>", run_pi_keyboard)
+        self.lbl_set_pressure.bind("<1>", lambda event: self.create_numpad(self.lbl_set_pressure))
+        self.lbl_set_pressure_power.bind("<1>", lambda event: self.create_numpad(self.lbl_set_pressure_power))
+
         self.txt_read_pressure = tk.Label(self.lbl_frame, text="Current Pressure", font = txt_font)
         reading_font = tkfont.Font(family="Helvetica", size=36)
         self.lbl_read_pressure = tk.Label(self.lbl_frame, text="300Pa", bg="black", fg="white", font=reading_font)
         self.txt_read_valve = tk.Label(self.lbl_frame, text="Current Valve Position", font = txt_font)
         self.lbl_read_valve = tk.Label(self.lbl_frame, text="000000", font=reading_font)
-        self.lbl_exp = tk.Label(self.lbl_frame, text="E", bg="#4169e1", font=tkfont.Font(family="Helvetica", size=18))
+        self.lbl_exp = tk.Label(self.lbl_frame, text="E -", bg="#4169e1", font=tkfont.Font(family="Helvetica", size=18))
 
-        top_el_padding = (20, 8)
-        bottom_el_padding = (10, 15)
+        top_el_padding = (10, 4)
+        bottom_el_padding = (8, 25)
 
         self.txt_read_pressure.pack(side=tk.TOP, pady=top_el_padding)
         self.lbl_read_pressure.pack(side=tk.TOP, ipadx = 10, ipady = 5, pady = bottom_el_padding)
@@ -79,10 +86,10 @@ class Valve_Operation():
         self.lbl_read_valve.pack(side = tk.TOP, ipadx=10, ipady = 5, pady = bottom_el_padding)
 
         self.txt_set_pressure.pack(side=tk.TOP, pady=top_el_padding)
-        self.lbl_set_pressure.pack(side=tk.LEFT, padx=(50, 0), pady = bottom_el_padding)
+        self.lbl_set_pressure.pack(side=tk.LEFT, padx=(50, 0), pady = bottom_el_padding, ipady = 10)
 
         self.lbl_exp.pack(side=tk.LEFT, pady = bottom_el_padding)
-        self.lbl_set_pressure_power.pack(side=tk.LEFT, pady = bottom_el_padding)
+        self.lbl_set_pressure_power.pack(side=tk.LEFT, pady = bottom_el_padding, ipady = 10)
 
 
     def update_pressure(self):
@@ -90,31 +97,32 @@ class Valve_Operation():
         pressure = send_com(command, self.ion_conn)[3:].strip()
         self.pressure_val = parse_scientific(pressure)
         self.lbl_read_pressure['text'] = pressure
-        self.lbl_read_valve['text'] = self.valve_pos
+        self.lbl_read_valve['text'] = round(self.valve_pos, 3)
         self.root.after(500, self.update_pressure)
 
     def valve_on(self):
         whole_pressure = self.lbl_set_pressure.get()
         dec_pressure = self.lbl_set_pressure_power.get()
-        set_pressure = parse_scientific(whole_pressure + "E" + dec_pressure)
-
-        self.ctrl = PID(def_P, def_I, def_D)
-        self.ctrl.setpoint = set_pressure
+        set_pressure = parse_scientific(whole_pressure + "E-" + dec_pressure)
 
         if(self.ctrl_loop is not None):
             self.root.after_cancel(self.ctrl_loop)
-        if(self.valve_pos == 0.0):
+            self.ctrl.target = set_pressure
+        else:
+            self.ctrl = PID_ff(def_P, def_I, def_D, set_pressure, SAMP_time, RAMP_time)
             self.valve_pos = DEFAULT_VALVE
-        self.open_valve(self.valve_pos)
+            self.open_valve()
+
         self.adjust_pressure()
 
-    def open_valve(self, position):
+    def open_valve(self):
+        position = self.valve_pos
         places = str(position).split(".")
         to_wrt = "{:03.03f}".format(position).zfill(7).split(".")
         to_wrt = "".join(to_wrt)
         msg = "R:" + to_wrt + "\r\n"
+        send_com(msg, self.leak_conn)
 
-        print(send_com(msg, self.leak_conn))
         print("Valve Position is now: " + to_wrt)
         ## TODO: ERROR HANDLING
 
@@ -122,32 +130,59 @@ class Valve_Operation():
 
     def adjust_pressure(self):
         curr_pressure = self.pressure_val
-        if(abs(calc_per_diff(curr_pressure, self.ctrl.setpoint)) > convergence_bound):
-            adjustment = self.ctrl(curr_pressure)
+        pressure_diff = calc_per_diff(curr_pressure, self.ctrl.target)
+        if(abs(pressure_diff) > convergence_bound):
+            #//adjustment = self.ctrl(curr_pressure) * .715
             ## Calculate percent difference, and scale valve accordingly
-            per_diff = (adjustment - curr_pressure) / curr_pressure
-            dir = 1 if per_diff > 0 else -1
-            valve_adjustment = 1 + dir * abs(per_diff / 100)
+            #//per_diff = (adjustment - curr_pressure) / curr_pressure
+            #//valve_adjustment = 1 + per_diff / 100
 
-            self.valve_pos = self.valve_pos * valve_adjustment
-            if(self.valve_pos < MAX_VALVE_OPEN):
-                print("valve is: " + str(self.valve_pos))
-                self.open_valve(round(self.valve_pos,6))
+            per_diff = self.ctrl.calc_percent_change(curr_pressure)
+
+            valve_adjustment = 1 + per_diff / 100
+
+            if(self.valve_pos * valve_adjustment < MAX_VALVE_OPEN):
+                self.valve_pos = self.valve_pos * valve_adjustment
+                self.open_valve()
             else:
                 print("VALVE POSITION TOO HIGH")
+        else:
+            print("CONVERGED!")
 
-        self.ctrl_loop = self.root.after(1500, self.adjust_pressure)
+        self.ctrl_loop = self.root.after(int(SAMP_time * 1000), self.adjust_pressure)
 
     def valve_close(self):
         command = "C:\r\n"
         response = send_com(command, self.leak_conn)
-        self.val_pos = 0.0
+        self.valve_pos = 0.0
         ## TODO: Error Handling
         self.lbl_set_pressure['text'] = ""
         if(self.ctrl_loop is not None):
             self.root.after_cancel(self.ctrl_loop)
             self.ctrl_loop = None
             self.ctrl = None
+
+    def create_numpad(self, entry_widget):
+        if(self.numpad != None):
+            self.numpad.destroy()
+        self.numpad = tk.Toplevel(self.root)
+        self.numpad.overrideredirect(True)
+
+        title_bar = tk.Frame(self.numpad, bg="black", relief="raised", bd=2)
+        close_button = tk.Button(title_bar, width=15, height=2, bg="red", text="X", command=self.numpad.destroy)
+        title_bar.grid(row=0, column=2)
+        close_button.pack()
+
+        self.numpad.wm_title("Numpad")
+        digits = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', '⌫']
+        num_font = tkfont.Font(family="Helvetica", size=26)
+
+        for i, b in enumerate(digits):
+            cmd = lambda bu=b: self.type_in(entry_widget, bu)
+            self.numpad.b = tk.Button(self.numpad, text=str(b), font=num_font, width=8, height=2, command = cmd).grid(row = int(i / 3) + 1, column = i % 3)
+
+    def type_in(self, entry_widget, item):
+        entry_widget.insert("end", item) if item != "⌫" else entry_widget.delete(0, "end")
 
 class Serial_Selection():
     def __init__(self, root):
@@ -167,8 +202,10 @@ class Serial_Selection():
         self.valve_var.set(connections[0])
 
         opmen_font = tkfont.Font(family="Helvetica", size=14)
+        op_font = tkfont.Font(family="Helvetica", size=18)
         self.valve_selection = tk.OptionMenu(self.root, self.valve_var, *connections)
         self.valve_selection.config(width=45, height=2, font=opmen_font)
+        self.root.nametowidget(self.valve_selection.menuname).config(font=op_font)
         self.lbl_valve.pack(pady=(30,10), padx=(30, 0))
         self.valve_selection.pack(pady=(10,15))
 
@@ -176,6 +213,7 @@ class Serial_Selection():
         self.gauge_var.set(connections[0])
         self.gauge_selection = tk.OptionMenu(self.root, self.gauge_var, *connections)
         self.gauge_selection.config(width=45, height=2, font=opmen_font)
+        self.root.nametowidget(self.gauge_selection.menuname).config(font=op_font)
         self.lbl_gauge.pack(pady=(30, 10), padx=(30, 0))
         self.gauge_selection.pack(pady=(10, 5))
 
