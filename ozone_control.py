@@ -29,8 +29,16 @@ DEFAULT_VALVE = 46.0
 MAX_VALVE_OPEN = 55.0
 
 class Valve_Operation():
+    '''
+    Full GUI and control operations for Ozone flow.
+    '''
     def __init__(self, root, ion_com, leak_com):
+        '''
+        Creates GUI and relevant control scheme for Ozone control
 
+        :param ion_com: serial connection to the ion gauge
+        :param leak_com: serial connection to the leak valve
+        '''
         self.root = root
         self.ion_conn = serial.Serial(ion_com, baudrate = 19200, timeout = .5)
         self.leak_conn = serial.Serial(leak_com, baudrate = 9600, parity = serial.PARITY_EVEN, bytesize = serial.SEVENBITS, timeout=3)
@@ -46,6 +54,9 @@ class Valve_Operation():
         self.pressure_val = 1.8e-8
 
     def init_buttons(self):
+        '''
+        Initializes ON and OFF button components of the GUI.
+        '''
         self.btn_frame = tk.Frame(self.root)
         self.btn_frame.config(bg="#4169e1")
 
@@ -57,6 +68,9 @@ class Valve_Operation():
         self.btn_off.pack(side=tk.TOP, padx=(BTN_PAD, BTN_PAD*4), pady=19)
 
     def init_labels(self):
+        '''
+        Initializes readable labels and inputs of the GUI.
+        '''
         self.lbl_frame = tk.Frame(self.root)
         self.lbl_frame.config(bg="#4169e1")
         txt_font = tkfont.Font(family="Helvetica", size=24)
@@ -93,6 +107,9 @@ class Valve_Operation():
 
 
     def update_pressure(self):
+        '''
+        Updates the current pressure reading.
+        '''
         command = "#  RDIG\r"
         pressure = send_com(command, self.ion_conn)[3:].strip()
         self.pressure_val = parse_scientific(pressure)
@@ -101,6 +118,9 @@ class Valve_Operation():
         self.root.after(500, self.update_pressure)
 
     def valve_on(self):
+        '''
+        Begins control process by initializing PID.
+        '''
         self.data = ""
 
         whole_pressure = self.lbl_set_pressure.get()
@@ -118,6 +138,9 @@ class Valve_Operation():
         self.adjust_pressure()
 
     def open_valve(self):
+        '''
+        Opens the leak valve to the current set position, which should be calculated by our control scheme.
+        '''
         position = self.valve_pos
         places = str(position).split(".")
         to_wrt = "{:03.03f}".format(position).zfill(7).split(".")
@@ -130,6 +153,9 @@ class Valve_Operation():
 
 
     def adjust_pressure(self):
+        '''
+        Runs the control loop, calculating the new valve position.
+        '''
         curr_pressure = self.pressure_val
         pressure_diff = calc_per_diff(curr_pressure, self.ctrl.target)
         if(abs(pressure_diff) > convergence_bound):
@@ -149,12 +175,18 @@ class Valve_Operation():
         self.ctrl_loop = self.root.after(int(SAMP_time * 1000), self.adjust_pressure)
 
     def log_values(self, curr_pressure):
+        '''
+        Logs data during ozone flow.
+        '''
         curr_time = datetime.now()
         curr_time = curr_time.strftime("%H:%M:%S")
 
         self.data += str(curr_time) + "," + str(curr_pressure) + "," + str(self.valve_pos) + "\n"
 
     def valve_close(self):
+        '''
+        Closes the valve and ends all control processes.
+        '''
         command = "C:\r\n"
         response = send_com(command, self.leak_conn)
         self.valve_pos = 0.0
@@ -168,6 +200,11 @@ class Valve_Operation():
                 to_wr.write(self.data)
 
     def create_numpad(self, entry_widget):
+        '''
+        Creates a GUI numpad allowing the user to type with a touch screen
+
+        :param entry_widget: the widget you would like to write to with this numpad
+        '''
         if(self.numpad != None):
             self.numpad.destroy()
         self.numpad = tk.Toplevel(self.root)
@@ -190,6 +227,9 @@ class Valve_Operation():
         entry_widget.insert("end", item) if item != "⌫" else entry_widget.delete(0, "end")
 
 class Serial_Selection():
+    '''
+    Class for selection of serial ports for ozone control.
+    '''
     def __init__(self, root):
         self.root = root
         self.frame = tk.Frame(self.root)

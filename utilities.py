@@ -14,7 +14,10 @@ def send_com(command, conn):
 
 def parse_scientific(num):
     '''
-    Parse
+    Parses an input string of the format "x..xEx..x", and returns its numerical equivalent
+
+    :param num: a string in scientific notation
+    :returns: the input string evaluated as a number
     '''
     parts = num.split("E")
     exp = 10**(int(parts[1]))
@@ -22,6 +25,9 @@ def parse_scientific(num):
     return val * exp
 
 def calc_per_diff(a, b):
+    '''
+    Calculates the percent difference between a and b 
+    '''
     c = (b - a) / a
     print("\n\n Difference: " + str(c) + "\n\n")
     return c
