@@ -26,7 +26,7 @@ def parse_scientific(num):
 
 def calc_per_diff(a, b):
     '''
-    Calculates the percent difference between a and b 
+    Calculates the percent difference between a and b
     '''
     c = (b - a) / a
     print("\n\n Difference: " + str(c) + "\n\n")
