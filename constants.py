@@ -2,7 +2,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 
 ## Initialize tkinter root
-root = tk.Tk()
+BG_COLOR = "#4169e1"
 
 ## Layout Variables
 BTN_W = 10

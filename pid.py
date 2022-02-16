@@ -41,6 +41,7 @@ class PID_ff():
             self.target = curr_val + self.inc_amount
         elif(self.count < self.increments):
             self.target += self.inc_amount
+            
         err = self.target - curr_val
         der = (err - self.prev_err) / self.sample_time
 

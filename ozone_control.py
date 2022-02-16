@@ -44,7 +44,7 @@ class Rack_GUI():
         Initializes ON and OFF button components of the GUI.
         '''
         self.btn_frame = tk.Frame(self.root)
-        self.btn_frame.config(bg="#4169e1")
+        self.btn_frame.config(bg=BG_COLOR)
 
         self.btn_on = tk.Button(self.btn_frame, text="ON", bg="green", fg="white", height=BTN_H, width=BTN_W, font=self.btn_font, command=self.CRLR.valve_on)
         self.btn_off = tk.Button(self.btn_frame, text="OFF", bg="red", fg="white", height=BTN_H, width=BTN_W, font=self.btn_font, command=self.CRLR.valve_close)
@@ -57,7 +57,7 @@ class Rack_GUI():
         Initializes readable labels and inputs of the GUI.
         '''
         self.lbl_frame = tk.Frame(self.root)
-        self.lbl_frame.config(bg="#4169e1")
+        self.lbl_frame.config(bg=BG_COLOR)
 
         self.numpad = None
 
@@ -72,7 +72,7 @@ class Rack_GUI():
         self.lbl_read_pressure = tk.Label(self.lbl_frame, text="300Pa", bg="black", fg="white", font=self.reading_font)
         self.txt_read_valve = tk.Label(self.lbl_frame, text="Current Valve Position", font = self.txt_font)
         self.lbl_read_valve = tk.Label(self.lbl_frame, text="000000", font=self.reading_font)
-        self.lbl_exp = tk.Label(self.lbl_frame, text="E -", bg="#4169e1", font=tkfont.Font(family="Helvetica", size=18))
+        self.lbl_exp = tk.Label(self.lbl_frame, text="E -", bg=BG_COLOR, font=tkfont.Font(family="Helvetica", size=18))
         self.txt_read_pressure.pack(side=tk.TOP, pady=top_el_padding)
         self.lbl_read_pressure.pack(side=tk.TOP, ipadx = 10, ipady = 5, pady = bottom_el_padding)
 
@@ -282,8 +282,8 @@ class Serial_Selection():
 
         :param connections: list of serial connections
         '''
-        self.lbl_valve = tk.Label(self.root, text="Leak Valve Connection:", font=self.label_font, bg="#4169e1", fg="white", anchor="w", width="45")
-        self.lbl_gauge = tk.Label(self.root, text="Ion Gauge Connection:", font=self.label_font, bg="#4169e1", fg="white", anchor="w", width="45")
+        self.lbl_valve = tk.Label(self.root, text="Leak Valve Connection:", font=self.label_font, bg=BG_COLOR, fg="white", anchor="w", width="45")
+        self.lbl_gauge = tk.Label(self.root, text="Ion Gauge Connection:", font=self.label_font, bg=BG_COLOR, fg="white", anchor="w", width="45")
         self.valve_var = tk.StringVar(self.root)
         self.valve_var.set(connections[0])
 
@@ -316,15 +316,16 @@ class Serial_Selection():
         self.root.destroy()
         root = tk.Tk()
         root.geometry("800x480")
-        root.config(bg="#4169e1")
+        root.config(bg=BG_COLOR)
 
         app = Valve_Operation(root, igauge, lvalve)
 
         root.mainloop()
 
 def main():
+    root = tk.Tk()
     root.geometry("800x480")
-    root.config(bg="#4169e1")
+    root.config(bg=BG_COLOR)
 
     app = Serial_Selection(root)
 
