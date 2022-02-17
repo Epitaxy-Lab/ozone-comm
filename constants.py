@@ -1,6 +1,3 @@
-import tkinter as tk
-import tkinter.font as tkfont
-
 ## Initialize tkinter root
 BG_COLOR = "#4169e1"
 

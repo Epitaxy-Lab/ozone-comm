@@ -1,3 +1,5 @@
+import tkinter as tk
+import tkinter.font as tkfont
 import serial.tools.list_ports
 import numpy as np
 from datetime import datetime
@@ -116,7 +118,7 @@ class Rack_GUI():
 
         for i, b in enumerate(digits):
             cmd = lambda bu=b: self.type_in(entry_widget, bu)
-            self.numpad.b = tk.Button(self.numpad, text=str(b), font=num_font, width=8, height=2, command = cmd).grid(row = int(i / 3) + 1, column = i % 3)
+            self.numpad.b = tk.Button(self.numpad, text=str(b), font=self.num_font, width=8, height=2, command = cmd).grid(row = int(i / 3) + 1, column = i % 3)
 
     def type_in(self, entry_widget, item):
         '''
