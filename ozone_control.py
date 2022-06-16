@@ -77,9 +77,12 @@ class Rack_GUI():
         self.lbl_exp = tk.Label(self.lbl_frame, text="E -", bg=BG_COLOR, font=tkfont.Font(family="Helvetica", size=18))
         self.txt_read_pressure.pack(side=tk.TOP, pady=top_el_padding)
         self.lbl_read_pressure.pack(side=tk.TOP, ipadx = 10, ipady = 5, pady = bottom_el_padding)
+        self.log = tk.IntVar()
+        self.check_log_dat = tk.Checkbutton(window, text="Log Data?", variable=self.log, onvalue=1, offvalue=0)
 
         self.txt_read_valve.pack(side=tk.TOP, pady = top_el_padding)
         self.lbl_read_valve.pack(side = tk.TOP, ipadx=10, ipady = 5, pady = bottom_el_padding)
+        self.check_log_dat.pack(side=tk.TOP, pady = bottom_el_padding)
 
     def init_input_labels(self):
         '''
@@ -90,7 +93,6 @@ class Rack_GUI():
         self.lbl_set_pressure_power = tk.Entry(self.lbl_frame, text="Desired Power", width=ENTRY_W, font=self.inp_font)
         self.lbl_set_pressure.bind("<1>", lambda event: self.create_numpad(self.lbl_set_pressure))
         self.lbl_set_pressure_power.bind("<1>", lambda event: self.create_numpad(self.lbl_set_pressure_power))
-
 
         self.txt_set_pressure.pack(side=tk.TOP, pady=top_el_padding)
         self.lbl_set_pressure.pack(side=tk.LEFT, padx=(50, 0), pady = bottom_el_padding, ipady = 10)
@@ -112,7 +114,7 @@ class Rack_GUI():
         close_button = tk.Button(title_bar, width=15, height=2, bg="red", text="X", command=self.numpad.destroy)
         title_bar.grid(row=0, column=2)
         close_button.pack()
-
+    
         self.numpad.wm_title("Numpad")
         digits = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', '⌫']
 
@@ -236,8 +238,9 @@ class Valve_Operation():
             self.root.after_cancel(self.ctrl_loop)
             self.ctrl_loop = None
             self.ctrl = None
-            with open(time.strftime("%Y%m%d_%H%M%S") + "-ozone_monitor.csv", 'w') as to_wr:
-                to_wr.write(self.data)
+            if(self.GUI.log): 
+                with open(time.strftime("%Y%m%d_%H%M%S") + "-ozone_monitor.csv", 'w') as to_wr:
+                    to_wr.write(self.data)
 
 class Serial_Selection():
     '''
