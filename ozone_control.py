@@ -39,6 +39,7 @@ class Rack_GUI():
         self.inp_font = tkfont.Font(family="Helvetica", size=22)
         self.reading_font = tkfont.Font(family="Helvetica", size=36)
         self.num_font = tkfont.Font(family="Helvetica", size=26)
+        self.check_font = tkfont.Font(family="Helvetica", size=20)
 
 
     def init_buttons(self):
@@ -51,8 +52,12 @@ class Rack_GUI():
         self.btn_on = tk.Button(self.btn_frame, text="ON", bg="green", fg="white", height=BTN_H, width=BTN_W, font=self.btn_font, command=self.CRLR.valve_on)
         self.btn_off = tk.Button(self.btn_frame, text="OFF", bg="red", fg="white", height=BTN_H, width=BTN_W, font=self.btn_font, command=self.CRLR.valve_close)
 
-        self.btn_on.pack(side=tk.TOP, padx=(BTN_PAD, BTN_PAD*4), pady=19)
-        self.btn_off.pack(side=tk.TOP, padx=(BTN_PAD, BTN_PAD*4), pady=19)
+        self.log = tk.IntVar()
+        self.check_log_dat = tk.Checkbutton(self.btn_frame, text="Log Data?", variable=self.log, onvalue=1, offvalue=0, font=self.check_font)
+
+        self.btn_on.pack(side=tk.TOP, padx=(BTN_PAD, BTN_PAD*4), pady=(BTN_VPAD, 0))
+        self.check_log_dat.pack(side=tk.TOP, padx=(BTN_PAD, BTN__PAD*4))
+        self.btn_off.pack(side=tk.TOP, padx=(BTN_PAD, BTN_PAD*4), pady=BTN_VPAD)
 
     def init_labels(self):
         '''
@@ -77,8 +82,6 @@ class Rack_GUI():
         self.lbl_exp = tk.Label(self.lbl_frame, text="E -", bg=BG_COLOR, font=tkfont.Font(family="Helvetica", size=18))
         self.txt_read_pressure.pack(side=tk.TOP, pady=top_el_padding)
         self.lbl_read_pressure.pack(side=tk.TOP, ipadx = 10, ipady = 5, pady = bottom_el_padding)
-        self.log = tk.IntVar()
-        self.check_log_dat = tk.Checkbutton(window, text="Log Data?", variable=self.log, onvalue=1, offvalue=0)
 
         self.txt_read_valve.pack(side=tk.TOP, pady = top_el_padding)
         self.lbl_read_valve.pack(side = tk.TOP, ipadx=10, ipady = 5, pady = bottom_el_padding)
@@ -238,8 +241,8 @@ class Valve_Operation():
             self.root.after_cancel(self.ctrl_loop)
             self.ctrl_loop = None
             self.ctrl = None
-            if(self.GUI.log): 
-                with open(time.strftime("%Y%m%d_%H%M%S") + "-ozone_monitor.csv", 'w') as to_wr:
+            if(self.GUI.log == 1): 
+                with open("data/" + time.strftime("%Y%m%d_%H%M%S") + "-ozone_monitor.csv", 'w') as to_wr:
                     to_wr.write(self.data)
 
 class Serial_Selection():

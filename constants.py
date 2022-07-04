@@ -2,9 +2,10 @@
 BG_COLOR = "#4169e1"
 
 ## Layout Variables
-BTN_W = 10
+BTN_W = 12
 BTN_H = 3
 BTN_PAD = 30
+BTN_VPAD = 17
 ENTRY_W = 6
 LBL_W = 40
 LBL_H = 3
